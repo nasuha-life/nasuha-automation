@@ -1,7 +1,6 @@
 import os
-import json
-import requests
 from pathlib import Path
+import requests
 
 TOKEN = os.environ["META_ACCESS_TOKEN"]
 FB_PAGE_ID = os.environ["FB_PAGE_ID"]
@@ -14,12 +13,12 @@ if not POSTER.exists():
 
 caption = CAPTION.read_text(encoding="utf-8") if CAPTION.exists() else "https://nasuha.life"
 
-url = f"https://graph.facebook.com/v23.0/{FB_PAGE_ID}/photos"
+url = f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos"
 
-with open(POSTER, "rb") as f:
+with open(POSTER, "rb") as image_file:
     response = requests.post(
         url,
-        files={"source": f},
+        files={"source": image_file},
         data={
             "caption": caption,
             "access_token": TOKEN,
