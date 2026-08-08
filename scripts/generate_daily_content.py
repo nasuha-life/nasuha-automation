@@ -1,33 +1,22 @@
-#!/usr/bin/env python3
-"""
-Generate daily Islamic content using OpenAI API.
-Outputs structured JSON with title, verse, reflection, and caption.
-"""
-
-import json
 import os
-import sys
-from datetime import datetime
+import json
 from pathlib import Path
 from openai import OpenAI
 
+OUTPUT_DIR = Path("output")
+OUTPUT_DIR.mkdir(exist_ok=True)
 
-def generate_content() -> dict:
-    """
-    Generate daily Islamic dakwah content using OpenAI.
-    
-    Returns:
-        dict: Content with title, verse_reference, verse, reflection, and caption
-    """
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY environment variable not set")
-    
-    client = OpenAI(api_key=api_key)
-    
-    prompt = """Buat satu konten dakwah Instagram untuk Nasuha.
+api_key = os.environ.get("OPENAI_API_KEY")
+if not api_key:
+    raise RuntimeError("OPENAI_API_KEY is not set")
 
-Format JSON:
+client = OpenAI(api_key=api_key)
+
+prompt = """
+Buat satu konten dakwah Instagram untuk Nasuha.
+
+Kembalikan HANYA JSON valid dengan format berikut:
+
 {
   "title": "...",
   "verse_reference": "...",
@@ -39,99 +28,27 @@ Format JSON:
 Syarat:
 - Bahasa Indonesia
 - Lembut, menyentuh, dan reflektif
-- Tema berganti setiap hari
-- Caption 120-180 kata
-- Maksimal 3 hashtag di caption
-- Tidak boleh menggunakan caption default
-- Jangan mengulang konten yang sudah ada sebelumnya
-- Verse harus dari Al-Quran atau Hadits yang autentik"""
+- Tema berbeda setiap hari
+- Caption sekitar 120-180 kata
+- Maksimal 3 hashtag
+- Sertakan ajakan memulai perjalanan taubat bersama https://nasuha.life
+- Jangan gunakan emoji berlebihan
+- Jangan menambahkan markdown atau penjelasan apa pun
+"""
 
-    print("[*] Generating daily content with OpenAI...")
-    
-    response = client.messages.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        temperature=0.7,
-        max_tokens=500
-    )
-    
-    response_text = response.content[0].text
-    
-    # Parse JSON response
-    try:
-        # Extract JSON from response (may contain markdown code blocks)
-        if "```json" in response_text:
-            json_start = response_text.find("```json") + 7
-            json_end = response_text.find("```", json_start)
-            json_text = response_text[json_start:json_end].strip()
-        elif "```" in response_text:
-            json_start = response_text.find("```") + 3
-            json_end = response_text.find("```", json_start)
-            json_text = response_text[json_start:json_end].strip()
-        else:
-            json_text = response_text
-        
-        content = json.loads(json_text)
-    except json.JSONDecodeError as e:
-        print(f"[!] Failed to parse JSON response: {e}")
-        print(f"[!] Response text: {response_text}")
-        sys.exit(1)
-    
-    # Validate required fields
-    required_fields = ["title", "verse_reference", "verse", "reflection", "caption"]
-    for field in required_fields:
-        if field not in content:
-            raise ValueError(f"Missing required field: {field}")
-    
-    # Add metadata
-    content["generated_at"] = datetime.utcnow().isoformat()
-    
-    return content
+response = client.responses.create(
+    model="gpt-5",
+    input=prompt,
+)
 
+text = response.output_text.strip()
 
-def save_content(content: dict, output_dir: str = "output") -> None:
-    """
-    Save generated content to JSON and text files.
-    
-    Args:
-        content: Generated content dictionary
-        output_dir: Directory to save files
-    """
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-    
-    # Save full content as JSON
-    json_file = output_path / "content.json"
-    with open(json_file, "w", encoding="utf-8") as f:
-        json.dump(content, f, ensure_ascii=False, indent=2)
-    
-    print(f"[+] Content saved to {json_file}")
-    
-    # Save caption as separate text file
-    caption_file = output_path / "caption.txt"
-    with open(caption_file, "w", encoding="utf-8") as f:
-        f.write(content["caption"])
-    
-    print(f"[+] Caption saved to {caption_file}")
+data = json.loads(text)
 
+with open(OUTPUT_DIR / "output.json", "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
 
-def main() -> None:
-    """Main entry point."""
-    try:
-        content = generate_content()
-        save_content(content)
-        print("[+] Daily content generated successfully")
-        print(f"[+] Title: {content['title']}")
-        print(f"[+] Verse: {content['verse_reference']}")
-    except Exception as e:
-        print(f"[!] Error generating content: {e}")
-        sys.exit(1)
+with open(OUTPUT_DIR / "caption.txt", "w", encoding="utf-8") as f:
+    f.write(data["caption"])
 
-
-if __name__ == "__main__":
-    main()
+print("Daily content generated successfully.")
