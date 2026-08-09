@@ -15,20 +15,18 @@ caption = CAPTION.read_text(encoding="utf-8") if CAPTION.exists() else "https://
 
 url = f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos"
 
-with open(POSTER, "rb") as image_file:
-    response = requests.post(
+with open(POSTER, "rb") as f:
+    r = requests.post(
         url,
-        files={"source": image_file},
+        files={"source": f},
         data={
             "caption": caption,
-            "access_token": TOKEN,
+            "access_token": TOKEN
         },
-        timeout=60,
+        timeout=60
     )
 
-print(response.status_code)
-print(response.text)
-
-response.raise_for_status()
-
-print("Facebook post published successfully.")
+print(r.status_code)
+print(r.text)
+r.raise_for_status()
+print("Facebook upload success")
