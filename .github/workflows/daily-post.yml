@@ -1,8 +1,6 @@
 name: Daily Nasuha Post
 
 on:
-  schedule:
-    - cron: '0 23 * * *'   # 06:00 WIB
   workflow_dispatch:
 
 permissions:
@@ -27,15 +25,18 @@ jobs:
           pip install -r requirements.txt
 
       - name: Generate daily content
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python scripts/generate_daily_content.py
 
       - name: Render poster
         run: python scripts/render_poster.py
 
-      - name: Publish to Facebook
+      - name: Publish to Meta
         env:
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          IG_BUSINESS_ID: ${{ secrets.IG_BUSINESS_ID }}
         run: python scripts/post_to_meta.py
 
       - name: Upload artifacts
